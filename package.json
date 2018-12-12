@@ -1,0 +1,16 @@
+{
+  "name": "adsbot",
+  "version": "0.0.1",
+  "scripts": {
+    "start": "node adsbot.js"
+  },
+  "dependencies": {
+    "telegraf": "^3.25.5",
+    "coinbase": "^2.0.8",
+    "coinpayments": "^1.1.8",
+    "mysql": "^2.16.0",
+    "wallet-address-validator": "^0.2.4",
+    "restler": "^3.4.0",
+    "node-cron": "^2.0.3"
+  }
+}
