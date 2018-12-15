@@ -418,7 +418,7 @@ bot.hears('⚙️Settings',ctx => {
     })
 })
 
-
+//promotions
 
 
 
@@ -450,6 +450,7 @@ btcscene.enter((ctx) => ctx.reply('send your BTC wallet address to be used for w
 
 
 )
+btcscene.hears('🛑cancel',ctx => {ctx.scene.leave()})
 btcscene.leave((ctx) =>  ctx.reply('Main menu', Markup
     .keyboard([
         ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
@@ -508,6 +509,8 @@ ethscene.enter((ctx) => ctx.reply('send your ETH wallet address to be used for w
 
 
 )
+ethscene.hears('🛑cancel',ctx => {ctx.scene.leave()})
+
 ethscene.leave((ctx) =>  ctx.reply('Main menu', Markup
     .keyboard([
         ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
@@ -565,6 +568,8 @@ ltcscene.enter((ctx) => ctx.reply('send your LTC wallet address to be used for w
 
 
 )
+ltcscene.hears('🛑cancel',ctx => {ctx.scene.leave()})
+
 ltcscene.leave((ctx) =>  ctx.reply('Main menu', Markup
     .keyboard([
         ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
@@ -622,6 +627,8 @@ dogescene.enter((ctx) => ctx.reply('send your DOGE wallet address to be used for
 
 
 )
+dogescene.hears('🛑cancel',ctx => {ctx.scene.leave()})
+
 dogescene.leave((ctx) =>  ctx.reply('Main menu', Markup
     .keyboard([
         ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
@@ -666,14 +673,1639 @@ dogescene.on('message', (ctx) => {
         ctx.scene.leave()
     }
 })
+
+//promotion scene
+const promoscene = new Scene('promo')
+promoscene.enter((ctx) => ctx.replyWithHTML('<b>To start promoting your channel you need:</b>\n\n1️⃣add this bot(@Cryptomazing_bot) to your channels administrator\n\n2️⃣Forward any post from your channel to the bot\n\n3️⃣Follow further instructions from the bot',Markup
+    .keyboard([
+        ['🛑cancel'], // Row1 with 2 buttons
+    ])
+
+    .resize()
+    .extra())
+
+
+
+)
+promoscene.hears('🛑cancel',ctx => {
+    con.query("DELETE FROM `ads` WHERE `ads`.`process` = 1")
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra())
+        .then(()=> {
+            ctx.scene.leave()
+        })
+})
+
+promoscene.on('message',ctx => {
+   if (ctx.message.forward_from_chat===undefined){
+       ctx.reply('you need to forward the message from the channel')
+   } else if (ctx.message.forward_from_chat!==undefined) {
+
+       var useri = {
+           id:ctx.from.id,
+           users:0,
+           link:'https://t.me/'+ctx.message.forward_from_chat.username,
+           status:'inactive',
+           process:1
+       };
+       con.query("insert into `ads` SET ?", useri)
+
+
+       ctx.telegram.getChatAdministrators(ctx.message.forward_from_chat.id)
+           .then(function (data) {
+               if (JSON.stringify(data).indexOf('Cryptomazing_bot') !== -1) {
+                   ctx.reply('🎖Good now everything is alright').then(()=>{
+                     ctx.scene.enter('promo2')
+                   })
+
+               }
+                   }).catch((err) => {
+           ctx.reply('This bot is not an admin in that channel')
+       })
+
+               }
+})
+//promo2
+const promo2scene = new Scene('promo2')
+promo2scene.enter((ctx) =>
+    con.query("SELECT balance,balanceeth,balancedoge,balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        ctx.replyWithHTML('<b>Which crypto do you wish to use</b>\n\n' + '<b>your balance</b>\n\n<b>BTC: </b><i>' + result[0].balance + '💰</i>\n<b>ETH: </b><i>' + result[0].balanceeth + '💰</i>\n<b>LTC: </b><i>' + result[0].balanceltc + '💰</i>\n<b>DOGE: </b><i>' + result[0].balancedoge + '💰</i>', Markup
+                .keyboard([
+                    ['◾️BTC'],
+                        ['◾️ETH'],
+                    ['◾️LTC'],
+                    ['◾️DOGE'],
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra())
+
+    })
+
+)
+promo2scene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra())
+        .then(()=> {
+            ctx.scene.leave()
+        })
+})
+
+promo2scene.hears('◾️BTC',ctx => {
+    con.query("SELECT balance FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+if (result[0].balance<0.0000006200){
+    ctx.reply('😩 your balance is not enough to continue with this advert')
+}else {
+    var bal=result[0].balance
+    var ad=Math.round(bal/0.0000006200)
+    var currency='BTC'
+    var ide=ctx.from.id
+    var process=2;
+    var sqli = "update `ads` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "' and `status`='inactive'";
+
+    con.query(sqli)
+    ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+        .keyboard([
+            ['🛑cancel'] // Row1 with 2 buttons
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+      ctx.scene.enter('user')
+    })
+
+}
+    })
+
+
+})
+//eth
+promo2scene.hears('◾️ETH',ctx => {
+    con.query("SELECT balanceeth FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balanceeth<0.0000243700){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balanceeth
+            var ad=Math.round(bal/0.0000243700)
+            var currency='ETH'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `ads` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'and `status`='inactive'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('usereth')
+            })
+
+        }
+    })
+
+
+})
+//ltc
+promo2scene.hears('◾️LTC',ctx => {
+    con.query("SELECT balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balanceltc<0.0000878300){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balanceltc
+            var ad=Math.round(bal/0.0000878300)
+            var currency='LTC'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `ads` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'and `status`='inactive'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('userltc')
+            })
+
+        }
+    })
+
+
+})
+//doge
+promo2scene.hears('◾️DOGE',ctx => {
+    con.query("SELECT balancedoge FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balancedoge<1){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balancedoge
+            var ad=Math.round(bal/1)
+            var currency='DOGE'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `ads` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'and `status`='inactive'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('userdoge')
+            })
+
+        }
+    })
+
+
+})
+
+
+
+
+
+
+promo2scene.hears('🛑cancel',ctx => {
+    con.query("DELETE FROM `ads` WHERE `ads`.`process` = 2")
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+      ctx.scene.leave()
+    })
+
+})
+
+
+//users scene
+const userscene = new Scene('user')
+userscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+
+userscene.on('message',ctx => {
+    con.query("SELECT balance FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balance
+        var ad=Math.round(bal/0.0000006200)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+      ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*0.0000006200
+            var process=3;
+            var sql = "update `ads` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                  ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userscene.leave((ctx) =>{
+    con.query("SELECT link,currency,status FROM ads WHERE id=" + ctx.from.id, function (err, result, fields) {
+        ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Channel promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+            .keyboard([
+                ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                ['💸Balance'],
+                ['📈Stastistics','⚙️Settings']
+            ])
+
+            .resize()
+            .extra())
+
+
+    })
+    }
+)
+
+//usereth
+const userethscene = new Scene('usereth')
+userethscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+userethscene.on('message',ctx => {
+    con.query("SELECT balanceeth FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balanceeth
+        var ad=Math.round(bal/0.0000243700)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*0.0000243700
+            var process=3;
+            var sql = "update `ads` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userethscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM ads WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Channel promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+//ltc
+const userltcscene = new Scene('userltc')
+userltcscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+userltcscene.on('message',ctx => {
+    con.query("SELECT balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balanceltc
+        var ad=Math.round(bal/0.0000878300)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*0.0000878300
+            var process=3;
+            var sql = "update `ads` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userltcscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM ads WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Channel promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+////doge
+const userdogescene = new Scene('userdoge')
+userdogescene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+userdogescene.on('message',ctx => {
+    con.query("SELECT balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balancedoge
+        var ad=Math.round(bal/1)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*1
+            var process=3;
+            var sql = "update `ads` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userdogescene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM ads WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Channel promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+/////.//////////////////
+
+///////bot//////////////
+
+////////////////////
+const promobotscene = new Scene('promobot')
+promobotscene.enter((ctx) => ctx.replyWithHTML('<b>To start promoting your channel you need:</b>2️⃣Forward any post from your channel to the bot\n\n3️⃣Follow further instructions from the bot',Markup
+    .keyboard([
+        ['🛑cancel'], // Row1 with 2 buttons
+    ])
+
+    .resize()
+    .extra())
+
+
+
+)
+
+promobotscene.hears('🛑cancel',ctx => {
+    con.query("DELETE FROM `bots` WHERE `bots`.`process` = 1")
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra())
+        .then(()=> {
+            ctx.scene.leave()
+        })
+})
+
+promobotscene.on('message',ctx => {
+    if (ctx.message.forward_from.is_bot===false){
+        ctx.reply('you need to forward the message from the bot')
+    } else if (ctx.message.forward_from.is_bot===true) {
+
+        var useri = {
+            id:ctx.from.id,
+            users:0,
+            link:'https://t.me/'+ctx.message.forward_from.username,
+            status:'inactive',
+            process:1
+        };
+        con.query("insert into `bots` SET ?", useri)
+ctx.replyWithHTML('👏🏻Everything is done').then(()=>{
+    ctx.scene.enter('promo2bot')
+
+
+        })
+
+    }else {
+        ctx.replyWithHTML('please forward the message from the bot')
+    }
+})
+//promo2
+const promo2botscene = new Scene('promo2bot')
+promo2botscene.enter((ctx) =>
+    con.query("SELECT balance,balanceeth,balancedoge,balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        ctx.replyWithHTML('<b>Which crypto do you wish to use</b>\n\n' + '<b>your balance</b>\n\n<b>BTC: </b><i>' + result[0].balance + '💰</i>\n<b>ETH: </b><i>' + result[0].balanceeth + '💰</i>\n<b>LTC: </b><i>' + result[0].balanceltc + '💰</i>\n<b>DOGE: </b><i>' + result[0].balancedoge + '💰</i>', Markup
+            .keyboard([
+                ['✳️BTC'],
+                ['✳️ETH'],
+                ['✳️LTC'],
+                ['✳️DOGE'],
+                ['🛑cancel'] // Row1 with 2 buttons
+            ])
+
+            .resize()
+            .extra())
+
+    })
+
+)
+promo2botscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra())
+        .then(()=> {
+            ctx.scene.leave()
+        })
+})
+
+promo2botscene.hears('✳️BTC',ctx => {
+    con.query("SELECT balance FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balance<0.0000006200){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balance
+            var ad=Math.round(bal/0.0000006200)
+            var currency='BTC'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `bots` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'and `status`='inactive'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('userbot')
+            })
+
+        }
+    })
+
+
+})
+//eth
+promo2botscene.hears('✳️ETH',ctx => {
+    con.query("SELECT balanceeth FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balanceeth<0.0000243700){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balanceeth
+            var ad=Math.round(bal/0.0000243700)
+            var currency='ETH'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `bots` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'and `status`='inactive'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('userethbot')
+            })
+
+        }
+    })
+
+
+})
+//ltc
+promo2botscene.hears('✳️LTC',ctx => {
+    con.query("SELECT balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balanceltc<0.0000878300){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balanceltc
+            var ad=Math.round(bal/0.0000878300)
+            var currency='LTC'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `bots` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'and `status`='inactive'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('userltcbot')
+            })
+
+        }
+    })
+
+
+})
+//doge
+promo2botscene.hears('✳️DOGE',ctx => {
+    con.query("SELECT balancedoge FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balancedoge<1){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balancedoge
+            var ad=Math.round(bal/1)
+            var currency='DOGE'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `bots` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'and `status`='inactive'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('userdogebot')
+            })
+
+        }
+    })
+
+
+})
+
+
+
+
+
+
+promo2botscene.hears('🛑cancel',ctx => {
+    con.query("DELETE FROM `bots` WHERE `bots`.`process` = 2")
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+
+
+//users scene
+const userbotscene = new Scene('userbot')
+userbotscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+
+userbotscene.on('message',ctx => {
+    con.query("SELECT balance FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balance
+        var ad=Math.round(bal/0.0000006200)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*0.0000006200
+            var process=3;
+            var sql = "update `bots` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userbotscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM bots WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Bot promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+
+//usereth
+const userethbotscene = new Scene('userethbot')
+userethbotscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+userethbotscene.on('message',ctx => {
+    con.query("SELECT balanceeth FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balanceeth
+        var ad=Math.round(bal/0.0000243700)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*0.0000243700
+            var process=3;
+            var sql = "update `bots` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userethbotscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM bots WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Bot promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+//ltc
+const userltcbotscene = new Scene('userltcbot')
+userltcbotscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+userltcbotscene.on('message',ctx => {
+    con.query("SELECT balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balanceltc
+        var ad=Math.round(bal/0.0000878300)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*0.0000878300
+            var process=3;
+            var sql = "update `bots` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userltcbotscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM bots WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Bot promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+////doge
+const userdogebotscene = new Scene('userdogebot')
+userdogebotscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+userdogebotscene.on('message',ctx => {
+    con.query("SELECT balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balancedoge
+        var ad=Math.round(bal/1)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*1
+            var process=3;
+            var sql = "update `bots` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userdogebotscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM bots WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Bot promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+
+
+
+
+
+//////////////////groups
+const groupscene = new Scene('group')
+groupscene.enter((ctx) => ctx.replyWithHTML('<b>To start promoting your Group you need:</b>1️⃣Add this bot to the group administrator \n2️⃣send this command<code>/startCryptomazing_bot</code> in group\n\n3️⃣Follow further instructions from the bot',Markup
+    .keyboard([
+        ['🛑cancel'], // Row1 with 2 buttons
+    ])
+
+    .resize()
+    .extra())
+
+
+
+)
+groupscene.hears('🛑cancel',ctx => {
+    con.query("DELETE FROM `groups` WHERE `groups`.`process` = 1")
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra())
+        .then(()=> {
+            ctx.scene.leave()
+        })
+})
+
+groupscene.on('message',ctx => {
+    if (ctx.message.chat.id===ctx.from.id){
+        ctx.reply('please follow the instructions above')
+    } else if (ctx.updateType==='mention') {
+
+        var useri = {
+            id:ctx.from.id,
+            users:0,
+            link:'https://t.me/'+ctx.message.chat.username,
+            status:'inactive',
+            process:1
+        };
+        con.query("insert into `groups` SET ?", useri)
+        ctx.replyWithHTML('👏🏻Everything is done').then(()=>{
+            ctx.scene.enter('promo2group')
+
+
+        })
+
+    }else {
+        ctx.replyWithHTML('it seems your group is private,you group needs to be public to promote it')
+    }
+})
+///////
+groupscene.on('new_chat_members',ctx=>{
+    var useri = {
+        id:ctx.from.id,
+        users:0,
+        link:'https://t.me/'+ctx.message.chat.username,
+        status:'inactive',
+        process:1
+    };
+    con.query("insert into `groups` SET ?", useri)
+    ctx.replyWithHTML('👏🏻Everything is done').then(()=> {
+        ctx.scene.enter('promo2group')
+    })
+})
+
+
+
+
+//promo2
+const promo2groupscene = new Scene('promo2group')
+promo2groupscene.enter((ctx) =>
+    con.query("SELECT balance,balanceeth,balancedoge,balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        ctx.replyWithHTML('<b>Which crypto do you wish to use</b>\n\n' + '<b>your balance</b>\n\n<b>BTC: </b><i>' + result[0].balance + '💰</i>\n<b>ETH: </b><i>' + result[0].balanceeth + '💰</i>\n<b>LTC: </b><i>' + result[0].balanceltc + '💰</i>\n<b>DOGE: </b><i>' + result[0].balancedoge + '💰</i>', Markup
+            .keyboard([
+                ['◽️BTC'],
+                ['◽️ETH'],
+                ['◽️LTC'],
+                ['◽️DOGE'],
+                ['🛑cancel'] // Row1 with 2 buttons
+            ])
+
+            .resize()
+            .extra())
+
+    })
+
+)
+promo2groupscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra())
+        .then(()=> {
+            ctx.scene.leave()
+        })
+})
+
+promo2groupscene.hears('◽️BTC',ctx => {
+    con.query("SELECT balance FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balance<0.0000006200){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balance
+            var ad=Math.round(bal/0.0000006200)
+            var currency='BTC'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `groups` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('usergroup')
+            })
+
+        }
+    })
+
+
+})
+//eth
+promo2botscene.hears('◽️ETH',ctx => {
+    con.query("SELECT balanceeth FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balanceeth<0.0000243700){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balanceeth
+            var ad=Math.round(bal/0.0000243700)
+            var currency='ETH'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `groups` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('userethgroup')
+            })
+
+        }
+    })
+
+
+})
+//ltc
+promo2botscene.hears('◽️LTC',ctx => {
+    con.query("SELECT balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balanceltc<0.0000878300){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balanceltc
+            var ad=Math.round(bal/0.0000878300)
+            var currency='LTC'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `groups` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('userltcgroup')
+            })
+
+        }
+    })
+
+
+})
+//doge
+promo2botscene.hears('◽️DOGE',ctx => {
+    con.query("SELECT balancedoge FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        if (result[0].balancedoge<1){
+            ctx.reply('😩 your balance is not enough to continue with this advert')
+        }else {
+            var bal=result[0].balancedoge
+            var ad=Math.round(bal/1)
+            var currency='DOGE'
+            var ide=ctx.from.id
+            var process=2;
+            var sqli = "update `groups` set `currency` ='" + currency + "', `process`='" + process + "' where `id` = '" + ide + "'";
+
+            con.query(sqli)
+            ctx.replyWithHTML('your balance allows you to have <b>'+ad+'</b> users\n\nHow many users do you wish to have👇🏻',Markup
+                .keyboard([
+                    ['🛑cancel'] // Row1 with 2 buttons
+                ])
+
+                .resize()
+                .extra()).then(()=>{
+                ctx.scene.enter('userdogegroup')
+            })
+
+        }
+    })
+
+
+})
+
+
+
+
+
+
+promo2botscene.hears('🛑cancel',ctx => {
+    con.query("DELETE FROM `groups` WHERE `groups`.`process` = 2")
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+
+
+//users scene
+const usergroupscene = new Scene('usergroup')
+usergroupscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+
+usergroupscene.on('message',ctx => {
+    con.query("SELECT balance FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balance
+        var ad=Math.round(bal/0.0000006200)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*0.0000006200
+            var process=3;
+            var sql = "update `groups` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+usergroupscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM bots WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Bot promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+
+//usereth
+const userethgroupscene = new Scene('userethgroup')
+userethgroupscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+userethgroupscene.on('message',ctx => {
+    con.query("SELECT balanceeth FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balanceeth
+        var ad=Math.round(bal/0.0000243700)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*0.0000243700
+            var process=3;
+            var sql = "update `groups` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userethgroupscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM bots WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Bot promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+//ltc
+const userltcgroupscene = new Scene('userltcgroup')
+userltcbotscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+userltcgroupscene.on('message',ctx => {
+    con.query("SELECT balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balanceltc
+        var ad=Math.round(bal/0.0000878300)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*0.0000878300
+            var process=3;
+            var sql = "update `groups` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userltcgroupscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM bots WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Bot promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+////doge
+const userdogegroupscene = new Scene('userdogegroup')
+userdogegroupscene.hears('🛑cancel',ctx => {
+    ctx.reply('Main menu', Markup
+        .keyboard([
+            ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+            ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+            ['💸Balance'],
+            ['📈Stastistics','⚙️Settings']
+        ])
+
+        .resize()
+        .extra()).then(()=>{
+        ctx.scene.leave()
+    })
+
+})
+userdogegroupscene.on('message',ctx => {
+    con.query("SELECT balanceltc FROM account WHERE id=" + ctx.from.id, function (err, result, fields) {
+        var bal=result[0].balancedoge
+        var ad=Math.round(bal/1)
+        if (isNaN(ctx.message.text)){
+            ctx.replyWithHTML('<b>🤷🏻‍♂️That is not a valid number</b>')
+        }else if (ctx.message.text>ad){
+            ctx.replyWithHTML('<b>😐Number of users has to be less or equal to</b><i>'+ad+'</i>')
+        }else {
+            var status='active'
+            var id=ctx.from.id
+            var users=ctx.message.text
+            var bala=ctx.message.text*1
+            var process=3;
+            var sql = "update `groups` set `status` ='" + status + "', `users`='" + users + "', `process`='"+process+ "' where `id` = '" + id + "'";
+            con.query("update `account` set `balance` = `balance`-'" + bala + "' where `id` = '" + id + "'")
+            con.query(sql,function (err,res) {
+                ctx.replyWithHTML('<b>👏🏻 Advert created</b>').then(()=>{
+                    ctx.scene.leave()
+                })
+
+            })
+
+
+        }
+    })
+
+})
+
+userdogegroupscene.leave((ctx) =>{
+        con.query("SELECT link,currency,status FROM bots WHERE id=" + ctx.from.id, function (err, result, fields) {
+            ctx.replyWithHTML('<b>📣📣📣📣📣Your promotions</b>\n\n <b>Type:</b>Bot promotion\n<b>Status:</b>' + result[0].status + '\n<b>Currency:</b>' + result[0].currency + '\n<b>Channel Link:</b>' + result[0].link,Markup
+                .keyboard([
+                    ['🏞Ads', '📢Promote'], // Row1 with 2 buttons
+                    ['👤Account', '👨‍👧‍👦Refferals'], // Row2 with 2 buttons
+                    ['💸Balance'],
+                    ['📈Stastistics','⚙️Settings']
+                ])
+
+                .resize()
+                .extra())
+
+
+        })
+    }
+)
+
+
+
+//////my ads
+bot.hears('🏵Channel proms',ctx => {
+    ctx.replyWithHTML('<b>your current ads</b>').then(()=> {
+        con.query("SELECT link,currency,status FROM ads WHERE id='" + ctx.from.id + "'and `status`='active'", function (err, result, fields) {
+            if (result.length<=0){
+                ctx.reply('☹️seems that you currently dont have any ads')
+            }else {
+
+                result.forEach(function (res) {
+                    ctx.replyWithHTML('<b>Promotion:</b>📣📣📣📣📣channel\n<b>Currency:</b>' + res.currency + '💵\n<b>status:</b>' + res.status + '✅\n<b>link:</b>' + res.link+'❇️')
+                })
+            }
+        })
+
+    })
+})
+//bot
+bot.hears('🏵Bot proms',ctx => {
+    ctx.replyWithHTML('<b>your current ads</b>').then(()=> {
+        con.query("SELECT link,currency,status FROM bots WHERE id='" + ctx.from.id + "'and `status`='active'", function (err, result, fields) {
+            if (result.length<=0){
+                ctx.reply('☹️seems that you currently dont have any ads')
+            }else {
+
+                result.forEach(function (res) {
+                    ctx.replyWithHTML('<b>Promotion:</b>📣📣📣📣📣Bot\n<b>Currency:</b>' + res.currency + '💵\n<b>status:</b>' + res.status + '✅\n<b>link:</b>' + res.link+'❇️')
+                })
+            }
+        })
+
+    })
+})
+//group
+bot.hears('🏵Group proms',ctx => {
+    ctx.replyWithHTML('<b>your current ads</b>').then(()=> {
+        con.query("SELECT link,currency,status FROM groups WHERE id='" + ctx.from.id + "'and `status`='active'", function (err, result, fields) {
+            if (result.length<=0){
+                ctx.reply('☹️seems that you currently dont have any ads')
+            }else {
+
+                result.forEach(function (res) {
+                    ctx.replyWithHTML('<b>Promotion:</b>📣📣📣📣📣Bot\n<b>Currency:</b>' + res.currency + '💵\n<b>status:</b>' + res.status + '✅\n<b>link:</b>' + res.link+'❇️')
+                })
+            }
+        })
+
+    })
+})
+//ads
+bot.hears('✅Channel',ctx => {
+    var status='active'
+    con.query("SELECT link,currency,status FROM ads WHERE status='" + status + "'and `status`='active'", function (err, result, fields) {
+        if (result.length <= 0) {
+            ctx.reply('☹️seems that there are no available ads right now')
+        } else {
+
+            result.forEach(function (res) {
+                ctx.replyWithHTML('<b>join now and earn</b>\n\n<b>Promotion:</b>📣📣📣📣📣Channel\n<b>Currency:</b>' + res.currency + '💵\n<b>status:</b>' + res.status + '✅\n<b>link:</b>' + res.link + '❇️',Extra
+                    .HTML()
+                    .markup((m) => m.inlineKeyboard([
+                        m.callbackButton('joined', 'joined'),
+                        m.urlButton('earn', res.link)
+
+                    ], {columns: 3}))
+                )
+            })
+
+
+        }
+    })
+})
 ///
-const stage = new Stage([btcscene,ethscene,ltcscene,dogescene], { ttl: 18000 })
+bot.hears('🤖Bot',ctx => {
+    var status='active'
+    con.query("SELECT link,currency,status FROM bots WHERE status='" + status + "'and `status`='active'", function (err, result, fields) {
+        if (result.length <= 0) {
+            ctx.reply('☹️seems that there are no available ads right now')
+        } else {
+
+            result.forEach(function (res) {
+                ctx.replyWithHTML('<b>join now and earn</b>\n\n<b>Promotion:</b>📣📣📣📣📣Bots\n<b>Currency:</b>' + res.currency + '💵\n<b>status:</b>' + res.status + '✅\n<b>link:</b>' + res.link + '❇️',Extra
+                    .HTML()
+                    .markup((m) => m.inlineKeyboard([
+                        m.callbackButton('joined', 'joined'),
+                        m.urlButton('earn', res.link)
+
+                    ], {columns: 3}))
+                )
+            })
+
+
+        }
+    })
+})
+///////
+bot.hears('👨‍👨‍👦Group',ctx => {
+    var status='active'
+    con.query("SELECT link,currency,status FROM groups WHERE status='" + status + "'and `status`='active'", function (err, result, fields) {
+        if (result.length <= 0) {
+            ctx.reply('☹️seems that there are no available ads right now')
+        } else {
+
+            result.forEach(function (res) {
+                ctx.replyWithHTML('<b>join now and earn</b>\n\n<b>Promotion:</b>📣📣📣📣📣Group\n<b>Currency:</b>' + res.currency + '💵\n<b>status:</b>' + res.status + '✅\n<b>link:</b>' + res.link + '❇️',Extra
+                    .HTML()
+                    .markup((m) => m.inlineKeyboard([
+                        m.callbackButton('joined', 'joined'),
+                        m.urlButton('earn', res.link)
+
+                    ], {columns: 3}))
+                )
+            })
+
+
+        }
+    })
+})
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+///
+const stage = new Stage([btcscene,ethscene,ltcscene,dogescene,promoscene,promo2scene,userscene,userdogescene,userethscene,userltcscene,promobotscene,promo2botscene,userbotscene,userdogebotscene,userethbotscene,userltcbotscene,groupscene,userdogegroupscene,usergroupscene,userltcgroupscene,userethgroupscene], { ttl: 180000 })
 bot.use(session())
 bot.use(stage.middleware())
 bot.hears('🔸BTC', enter('btc'))
 bot.hears('🔸ETH', enter('eth'))
 bot.hears('🔸LTC', enter('ltc'))
 bot.hears('🔸DOGE', enter('doge'))
+bot.hears('✅Channel✅', enter('promo'))
+bot.hears('👨‍👨‍👦Group👨‍👨‍👦',enter('group'))
+
 
 
 
