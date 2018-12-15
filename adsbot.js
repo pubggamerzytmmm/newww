@@ -2305,7 +2305,7 @@ bot.hears('🔸LTC', enter('ltc'))
 bot.hears('🔸DOGE', enter('doge'))
 bot.hears('✅Channel✅', enter('promo'))
 bot.hears('👨‍👨‍👦Group👨‍👨‍👦',enter('group'))
-bot.hears('🤖Bot🤖',enter('group'))
+bot.hears('🤖Bot🤖',enter('promobot'))
 
 
 
