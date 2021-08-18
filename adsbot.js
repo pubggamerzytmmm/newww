@@ -1,7 +1,7 @@
 const Telegraf = require('telegraf');
 const Extra = require('telegraf/extra');
 const Markup = require('telegraf/markup');
-const bot = new Telegraf("630429789:AAFKWwvXvU7Kt_GADkWL_5YGeArIN7s-JbI");
+const bot = new Telegraf("1960488752:AAE0hwPqlsT090WcY2q1RZZmhbhC97uMXr8");
 const Scene = require('telegraf/scenes/base')
 const session = require('telegraf/session')
 const Stage = require('telegraf/stage')
@@ -19,10 +19,10 @@ var mysecret = '8eDpUW9PJ7E16xlns9msu5vUNxth9G0A'
 var mykey = 'JaH2VY37PArRPeod'
 var client = new Client({'apiKey': mykey, 'apiSecret': mysecret});
 var con = mysql.createConnection({
-    host: "bvsdkkby7-mysql.services.clever-cloud.com",
-    user: "uqsetrzdlurw3dct",
-    password: "54dPbaLMebOOUtsqRiQ",
-    database:"bvsdkkby7"
+    host: "remotemysql.com",
+    user: "tBX71Pqrk2",
+    password: "14t2WMizRo",
+    database:"tBX71Pqrk2"
 });
 
 //server
